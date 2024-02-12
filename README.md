@@ -1,6 +1,6 @@
 # llvm_pgo
 
-Repo to build a Clang PGO prepared Ubuntu container
+Repo to build a Clang PGO prepared Ubuntu image
 
 ## Requirements 
 * Checkout llvm-project

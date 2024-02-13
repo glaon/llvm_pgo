@@ -15,21 +15,17 @@ ENV LLVM_DIR=/llvm-project/
 ENV CMAKE_GENERATOR=Ninja
 ENV CMAKE_BUILD_TYPE=Release
 
-# TODO rename stages!
-
 # stage0 build without instrumentation
-RUN mkdir stage1 && cd stage1 && cmake -DLLVM_ENABLE_PROJECTS=clang ../llvm && cmake --build .
+RUN mkdir stage0 && cd stage0 && cmake -DLLVM_ENABLE_PROJECTS=clang ../llvm && cmake --build .
 
 # stage1 build compiler
-ENV CC=/llvm-project/stage1/clang
-ENV CXX=/llvm-project/stage1/clang++
-ENV LLVM_PROFDATA=/llvm-project/stage2/llvm-profdata
-
-RUN ls /llvm-project/stage1/
+ENV CC=/llvm-project/stage0/bin/clang
+ENV CXX=/llvm-project/stage0/bin/clang++
+ENV LLVM_PROFDATA=/llvm-project/stage0/bin/llvm-profdata
 
 # stage1 build with instrumentation
-RUN mkdir stage2 && cd stage2 && cmake -DLLVM_ENABLE_PROJECTS=clang -DLLVM_BUILD_INSTRUMENTED=IR -DLLVM_BUILD_RUNTIME=No ../llvm && ninja all
+RUN mkdir stage1 && cd stage1 && cmake -DLLVM_ENABLE_PROJECTS=clang -DLLVM_BUILD_INSTRUMENTED=IR -DLLVM_BUILD_RUNTIME=No ../llvm && cmake --build .
 
 # stage2 ready compiler
-ENV CC=/llvm-project/stage2/clang
-ENV CXX=/llvm-project/stage2/clang++
+ENV CC=/llvm-project/stage1/bin/clang
+ENV CXX=/llvm-project/stage1/bin/clang++

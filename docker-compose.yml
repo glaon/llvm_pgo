@@ -6,3 +6,20 @@ services:
       dockerfile: pgo_prepare.Dockerfile
       args:
         LLVM_VERSION: ${LLVM_VERSION}
+
+  profiling:
+    image: pgo_profile_${PROJECT}:$LLVM_VERSION
+    build:
+      context: build_scripts
+      dockerfile_inline: |
+        FROM pgo_prepare:$LLVM_VERSION
+        COPY ${PROJECT}_build.sh build_script.sh
+        RUN chmod +x build_script.sh && ./build_script.sh
+        RUN llvm-profdata merge -output=/profdata/profdata.prof /profdata/*.profraw
+      args:
+        PROJECT: cmake
+        LLVM_PROFDATA_FILE: /profdata/%.profraw
+          
+  #apply:
+
+  #test:

@@ -15,11 +15,13 @@ services:
         FROM pgo_prepare:$LLVM_VERSION
         COPY ${PROJECT}_build.sh build_script.sh
         RUN chmod +x build_script.sh && ./build_script.sh
-        RUN llvm-profdata merge -output=/profdata/profdata.prof /profdata/*.profraw
+        RUN $LLVM_PROFDATA merge -output=/profdata/profdata.prof /profdata/*.profraw
       args:
         PROJECT: cmake
         LLVM_PROFDATA_FILE: /profdata/%.profraw
           
   #apply:
+  # apply profiling data while building clang
 
   #test:
+  # test how fast it compiles now with stage1 vs stage2 compiler

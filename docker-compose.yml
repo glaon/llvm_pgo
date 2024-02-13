@@ -1,0 +1,8 @@
+services:
+  prepare:
+    image: pgo_prepare:$LLVM_VERSION
+    build:
+      context: .
+      dockerfile: pgo_prepare.Dockerfile
+      args:
+        LLVM_VERSION: ${LLVM_VERSION}

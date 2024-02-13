@@ -1,9 +1,13 @@
 FROM ubuntu:24.04
 
-COPY llvm-project /llvm-project
+ARG LLVM_VERSION
 
 # basic build requiremnets for LLVM/Clang
-RUN apt-get update && apt-get install -y build-essential cmake ninja-build python3
+RUN apt-get update && apt-get install -y build-essential cmake ninja-build python3 git \
+    && rm -rf /var/lib/apt/lists/* 
+
+COPY checkout_llvm.sh /checkout_llvm.sh
+RUN ./checkout_llvm.sh $LLVM_VERSION && rm checkout_llvm.sh
 
 WORKDIR /llvm-project/
 

@@ -7,4 +7,4 @@ Repo to build a Clang PGO prepared Ubuntu image
 
 ## Steps
 * Run [`checkout_llvm.sh`](checkout_llvm.sh)
-* Run `docker build -f pgo_prepare.Dockerfile .`
+* Run `LLVM_VERSION=17.0.6 docker compose build`

@@ -28,6 +28,8 @@ RUN mkdir stage1 && cd stage1 && cmake ../llvm \
      -DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
      -DCMAKE_INSTALL_PREFIX=./install && ninja install
 
+ENV CC=/llvm-project/stage1/bin/clang
+ENV CXX=/llvm-project/stage1/bin/clang++
 
 ###################################################################################################
 # stage2 instrumented
@@ -60,7 +62,7 @@ RUN chmod +x build_${PROJECT}.sh && ./build_${PROJECT}.sh
 
 # Merge profiling data with stage 1 tooling
 RUN cd stage2-prof-gen/profiles && \
-    ../stage1/install/bin/llvm-profdata merge -output=clang.profdata *
+    ../../stage1/install/bin/llvm-profdata merge -output=clang.profdata *
 
 
 ###################################################################################################
@@ -68,12 +70,12 @@ FROM stage1 as stage2-pgo-lto
 
 RUN mkdir stage2-pgo-lto
 
-COPY --from=stage2-train stage2-prof-gen/profiles/clang.profdata stage2-pgo-lto/clang.profdata
+COPY --from=stage2-train /llvm-project/stage2-prof-gen/profiles/clang.profdata /llvm-project/stage2-pgo-lto/clang.profdata
 
 # option to optimize with bolt
 ENV LDFLAGS="-Wl,-q"
 
-RUN stage2-pgo-lto && cmake ../llvm \
+RUN cd stage2-pgo-lto && cmake ../llvm \
     -DLLVM_ENABLE_PROJECTS="all" \
     -DLLVM_ENABLE_LTO=Full \
     -DLLVM_PROFDATA_FILE=clang.profdata \
@@ -115,20 +117,3 @@ RUN cd stage3 && ../stage1/install/bin/llvm-bolt \
     -o ../stage2-prof-use-lto/install/bin/clang-$MAJOR.bolt -b clang-$MAJOR.yaml \
     -reorder-blocks=ext-tsp -reorder-functions=hfsort+ -split-functions \
     -split-all-cold -dyno-stats -icf=1 -use-gnu-stack
-
-###################################################################################################
-# Compare 
-
-#https://chromium.googlesource.com/native_client/nacl-llvm-project-v10/+/9471902eff782d9fd95f5ce77b2a7193c8d0ac4c/bolt/docs/OptimizingClang.md
-
-# mv and symlink
-#$ mv $CPATH/clang-7 $CPATH/clang-7.org
-#$ ln -fs $CPATH/clang-7.bolt $CPATH/clang-7
-
-# compare runs can be done like:
-# $ ln -fs $CPATH/clang-7.org $CPATH/clang-7
-# $ ninja clean && /bin/time -f %e ninja clang -j48
-# 202.72
-# $ ln -fs $CPATH/clang-7.bolt $CPATH/clang-7
-# $ ninja clean && /bin/time -f %e ninja clang -j48
-# 180.11

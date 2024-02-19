@@ -17,6 +17,7 @@ ENV LLVM_DIR=/llvm-project/
 ENV CMAKE_GENERATOR=Ninja
 ENV CMAKE_BUILD_TYPE=Release
 
+###################################################################################################
 # stage1 build without instrumentation
 FROM llvm_base as stage1
 
@@ -28,6 +29,7 @@ RUN mkdir stage1 && cd stage1 && cmake ../llvm \
      -DCMAKE_INSTALL_PREFIX=./install && ninja install
 
 
+###################################################################################################
 # stage2 instrumented
 FROM stage1 as stage2-instrumented
 
@@ -46,21 +48,22 @@ ENV CC=/llvm-project/stage2-prof-gen/bin/clang
 ENV CXX=/llvm-project/stage2-prof-gen/bin/clang++
 
 
+###################################################################################################
 # stage2 train stage
 FROM stage2-instrumented as stage2-train
 
+ARG PROJECT=clang
+
 # BUILD your project with clang, eg. clang itself
-RUN mkdir stage2-train && cd stage2-train && cmake ../llvm \
-    -DLLVM_ENABLE_PROJECTS="clang" \
-    -DLLVM_USE_LINKER=lld \
-    -DCMAKE_INSTALL_PREFIX=./install && ninja install
+COPY build_scripts/build_${PROJECT}.sh build_${PROJECT}.sh
+RUN chmod +x build_${PROJECT}.sh && ./build_${PROJECT}.sh
 
 # Merge profiling data with stage 1 tooling
 RUN cd stage2-prof-gen/profiles && \
     ../stage1/install/bin/llvm-profdata merge -output=clang.profdata *
 
 
-
+###################################################################################################
 FROM stage1 as stage2-pgo-lto
 
 RUN mkdir stage2-pgo-lto
@@ -71,7 +74,7 @@ COPY --from=stage2-train stage2-prof-gen/profiles/clang.profdata stage2-pgo-lto/
 ENV LDFLAGS="-Wl,-q"
 
 RUN stage2-pgo-lto && cmake ../llvm \
-    -DLLVM_ENABLE_PROJECTS="clang;lld" \
+    -DLLVM_ENABLE_PROJECTS="all" \
     -DLLVM_ENABLE_LTO=Full \
     -DLLVM_PROFDATA_FILE=clang.profdata \
     -DLLVM_USE_LINKER=lld \
@@ -80,16 +83,27 @@ RUN stage2-pgo-lto && cmake ../llvm \
 ENV CC=/llvm-project/stage2-pgo-lto/bin/clang
 ENV CXX=/llvm-project/stage2-pgo-lto/bin/clang++
 
-
+###################################################################################################
 FROM stage2-pgo-lto as stage3-bolt
 
-# copy from perf docker
+ARG LINUX_KERNEL_VERSION=v6.6.10
+ARG PROJECT=clang
 
-RUN mkdir stage3 && cd stage3 && cmake ../llvm  \
-    -DLLVM_USE_LINKER=lld -DCMAKE_INSTALL_PREFIX=./install
+# Get prerequisites for perf
+RUN apt-get update && apt-get install -y wget pkg-config \
+    git curl make bison flex elfutils libelf-dev libdw-dev libaudit-dev xz-utils \
+    systemtap-sdt-dev libunwind-dev libssl-dev libslang2-dev python3-dev libzstd-dev \
+    libzstd-dev libbabeltrace-ctf-dev libcap-dev python3-setuptools libpfm4-dev \
+    libperl-dev libtraceevent-dev libbfd-dev gcc g++ \
+    && rm -rf /var/lib/apt/lists/* 
+
+# Build perf
+RUN mkdir /perf && mkdir /src && cd /src && git clone --depth 1 --branch=$LINUX_KERNEL_VERSION git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git && \
+    cd linux-stable/tools/perf && make O=/perf/ && rm -rf /src
 
 # Run a typical workload, eg. compiling clang itself again
-RUN perf record -e cycles:u -j any,u -- ninja clang
+COPY build_scripts/build_${PROJECT}.sh build_${PROJECT}.sh
+RUN chmod +x build_${PROJECT}.sh && ./perf/perf record -e cycles:u -j any,u -- ./build_${PROJECT}.sh
 
 RUN export MAJOR=$(echo $LLVM_VERSION | cut -f1 -d.)
 
@@ -101,6 +115,9 @@ RUN cd stage3 && ../stage1/install/bin/llvm-bolt \
     -o ../stage2-prof-use-lto/install/bin/clang-$MAJOR.bolt -b clang-$MAJOR.yaml \
     -reorder-blocks=ext-tsp -reorder-functions=hfsort+ -split-functions \
     -split-all-cold -dyno-stats -icf=1 -use-gnu-stack
+
+###################################################################################################
+# Compare 
 
 #https://chromium.googlesource.com/native_client/nacl-llvm-project-v10/+/9471902eff782d9fd95f5ce77b2a7193c8d0ac4c/bolt/docs/OptimizingClang.md
 

@@ -28,6 +28,7 @@ RUN mkdir stage1 && cd stage1 && cmake ../llvm \
      -DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
      -DCMAKE_INSTALL_PREFIX=./install && ninja install
 
+# stage2 compiler
 ENV CC=/llvm-project/stage1/bin/clang
 ENV CXX=/llvm-project/stage1/bin/clang++
 
@@ -45,7 +46,7 @@ RUN mkdir stage2-prof-gen && cd stage2-prof-gen && cmake ../llvm \
     -DLLVM_USE_LINKER=lld -DLLVM_BUILD_INSTRUMENTED=ON \
     -DCMAKE_INSTALL_PREFIX=./install && ninja install
 
-# stage2 ready compiler
+# stage2 compiler with instrumentation
 ENV CC=/llvm-project/stage2-prof-gen/bin/clang
 ENV CXX=/llvm-project/stage2-prof-gen/bin/clang++
 
@@ -80,8 +81,10 @@ RUN cd stage2-pgo-lto && cmake ../llvm \
     -DLLVM_ENABLE_LTO=Full \
     -DLLVM_PROFDATA_FILE=clang.profdata \
     -DLLVM_USE_LINKER=lld \
-    -DCMAKE_INSTALL_PREFIX=./install && ninja install
+    -DCMAKE_CXX_FLAGS="-Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date" \
+    -DCMAKE_INSTALL_PREFIX=./install && ninja install -j16
 
+# stage2 compiler with pgo, lto and prepared for bold optimization
 ENV CC=/llvm-project/stage2-pgo-lto/bin/clang
 ENV CXX=/llvm-project/stage2-pgo-lto/bin/clang++
 

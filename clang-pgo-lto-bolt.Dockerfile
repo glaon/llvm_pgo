@@ -116,7 +116,7 @@ RUN mkdir /perf && mkdir /src && cd /src && git clone --depth 1 --branch=$LINUX_
 
 # Run a typical workload, eg. compiling clang itself again
 COPY build_scripts/build_${PROJECT}.sh build_${PROJECT}.sh
-RUN chmod +x build_${PROJECT}.sh && ./perf/perf record -e cycles:u -j any,u -- ./build_${PROJECT}.sh
+RUN chmod +x build_${PROJECT}.sh && /perf/perf record -e cycles:u -j any,u -- ./build_${PROJECT}.sh
 
 RUN export MAJOR=$(echo $LLVM_VERSION | cut -f1 -d.)
 

@@ -22,9 +22,10 @@ ENV CMAKE_BUILD_TYPE=Release
 FROM llvm_base as stage1
 
 RUN mkdir stage1 && cd stage1 && cmake ../llvm \
-     -DLLVM_ENABLE_PROJECTS="clang;lld" \
+     -DLLVM_ENABLE_PROJECTS="clang;lld;bolt" \
      -DLLVM_ENABLE_RUNTIMES="compiler-rt" \
-     -DCOMPILER_RT_BUILD_SANITIZERS=OFF -DCOMPILER_RT_BUILD_XRAY=OFF \
+     -DCOMPILER_RT_BUILD_SANITIZERS=OFF \
+     -DCOMPILER_RT_BUILD_XRAY=OFF \
      -DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
      -DCMAKE_INSTALL_PREFIX=./install && ninja install
 
@@ -43,7 +44,9 @@ ENV LLVM_PROFDATA=/llvm-project/stage0/bin/llvm-profdata
 
 RUN mkdir stage2-prof-gen && cd stage2-prof-gen && cmake ../llvm \
     -DLLVM_ENABLE_PROJECTS="clang;lld" \
-    -DLLVM_USE_LINKER=lld -DLLVM_BUILD_INSTRUMENTED=ON \
+    -DLLVM_USE_LINKER=lld \
+    -DLLVM_PARALLEL_LINK_JOBS=2 \
+    -DLLVM_BUILD_INSTRUMENTED=ON \
     -DCMAKE_INSTALL_PREFIX=./install && ninja install
 
 # stage2 compiler with instrumentation
@@ -73,16 +76,21 @@ RUN mkdir stage2-pgo-lto
 
 COPY --from=stage2-train /llvm-project/stage2-prof-gen/profiles/clang.profdata /llvm-project/stage2-pgo-lto/clang.profdata
 
+RUN git clone --branch 0.21 --depth=1 https://github.com/include-what-you-use/include-what-you-use.git /iwyu/
+
 # option to optimize with bolt
 ENV LDFLAGS="-Wl,-q"
 
 RUN cd stage2-pgo-lto && cmake ../llvm \
-    -DLLVM_ENABLE_PROJECTS="all" \
+    -DLLVM_ENABLE_PROJECTS="clang;lld;bolt;clang-tools-extra" \
     -DLLVM_ENABLE_LTO=Full \
     -DLLVM_PROFDATA_FILE=clang.profdata \
     -DLLVM_USE_LINKER=lld \
+    -DLLVM_PARALLEL_LINK_JOBS=2 \
     -DCMAKE_CXX_FLAGS="-Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date" \
-    -DCMAKE_INSTALL_PREFIX=./install && ninja install -j16
+    -DLLVM_EXTERNAL_PROJECTS=iwyu \
+    -DLLVM_EXTERNAL_IWYU_SOURCE_DIR=/iwyu/ \
+    -DCMAKE_INSTALL_PREFIX=./install && ninja install
 
 # stage2 compiler with pgo, lto and prepared for bold optimization
 ENV CC=/llvm-project/stage2-pgo-lto/bin/clang

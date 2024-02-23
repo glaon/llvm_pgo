@@ -14,6 +14,8 @@ services:
       args:
         - LLVM_VERSION=${LLVM_VERSION}
     image: "clang_stage1:${LLVM_VERSION}"
+    depends_on: 
+      - llvm_base
 
   clang_stage2_instrumented:
     build: 
@@ -22,6 +24,8 @@ services:
       args:
         - LLVM_VERSION=${LLVM_VERSION}
     image: "clang_stage2_instrumented:${LLVM_VERSION}"
+    depends_on:
+      - clang_stage1
 
   clang_stage2_train:
     build: 
@@ -31,6 +35,8 @@ services:
         - LLVM_VERSION=${LLVM_VERSION}
         - PROJECT=${PROJECT}
     image: "clang_stage2_train_${PROJECT}:${LLVM_VERSION}"
+    depends_on:
+      - clang_stage2_instrumented
 
   clang_stage2_pgo_lto:
     build: 
@@ -39,6 +45,8 @@ services:
       args:
         - LLVM_VERSION=${LLVM_VERSION}
     image: "clang_stage2_pgo_lto:${LLVM_VERSION}"
+    depends_on:
+      - clang_stage2_train
 
   clang_stage3:
     build: 
@@ -48,3 +56,5 @@ services:
         - LLVM_VERSION=${LLVM_VERSION}
         - PROJECT=${PROJECT}
     image: "clang_stage3_${PROJECT}:${LLVM_VERSION}"
+    depends_on:
+      - clang_stage2_pgo_lto

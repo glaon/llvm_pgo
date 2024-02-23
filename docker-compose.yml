@@ -1,0 +1,50 @@
+services:
+  llvm_base:
+    build: 
+      context: .
+      dockerfile: llvm_base.Dockerfile
+      args:
+        - LLVM_VERSION=${LLVM_VERSION}
+    image: "llvm_base:${LLVM_VERSION}"
+
+  clang_stage1:
+    build: 
+      context: .
+      dockerfile: clang_stage1.Dockerfile
+      args:
+        - LLVM_VERSION=${LLVM_VERSION}
+    image: "clang_stage1:${LLVM_VERSION}"
+
+  clang_stage2_instrumented:
+    build: 
+      context: .
+      dockerfile: clang_stage2_instrumented.Dockerfile
+      args:
+        - LLVM_VERSION=${LLVM_VERSION}
+    image: "clang_stage2_instrumented:${LLVM_VERSION}"
+
+  clang_stage2_train:
+    build: 
+      context: .
+      dockerfile: clang_stage2_train.Dockerfile
+      args:
+        - LLVM_VERSION=${LLVM_VERSION}
+        - PROJECT=${PROJECT}
+    image: "clang_stage2_train_${PROJECT}:${LLVM_VERSION}"
+
+  clang_stage2_pgo_lto:
+    build: 
+      context: .
+      dockerfile: clang_stage2_pgo_lto.Dockerfile
+      args:
+        - LLVM_VERSION=${LLVM_VERSION}
+    image: "clang_stage2_pgo_lto:${LLVM_VERSION}"
+
+  clang_stage3:
+    build: 
+      context: .
+      dockerfile: clang_stage3.Dockerfile
+      args:
+        - LLVM_VERSION=${LLVM_VERSION}
+        - PROJECT=${PROJECT}
+    image: "clang_stage3_${PROJECT}:${LLVM_VERSION}"

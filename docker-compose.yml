@@ -52,7 +52,7 @@ services:
   clang_stage3:
     build: 
       context: .
-      dockerfile: clang_stage3.Dockerfile
+      dockerfile: clang_stage3_train.Dockerfile
       args:
         - LLVM_VERSION=${LLVM_VERSION}
         - PROJECT=${PROJECT}

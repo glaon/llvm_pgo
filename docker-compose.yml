@@ -34,7 +34,7 @@ services:
       args:
         - LLVM_VERSION=${LLVM_VERSION}
         - PROJECT=${PROJECT}
-    image: "clang_stage2_train_${PROJECT}:${LLVM_VERSION}"
+    image: "clang_stage2_train:${PROJECT}_${LLVM_VERSION}"
     depends_on:
       - clang_stage2_instrumented
 
@@ -44,7 +44,8 @@ services:
       dockerfile: clang_stage2_pgo_lto.Dockerfile
       args:
         - LLVM_VERSION=${LLVM_VERSION}
-    image: "clang_stage2_pgo_lto:${LLVM_VERSION}"
+        - PROJECT=${PROJECT}
+    image: "clang_stage2_pgo_lto:${PROJECT}_${LLVM_VERSION}"
     depends_on:
       - clang_stage2_train
 
@@ -55,6 +56,6 @@ services:
       args:
         - LLVM_VERSION=${LLVM_VERSION}
         - PROJECT=${PROJECT}
-    image: "clang_stage3_${PROJECT}:${LLVM_VERSION}"
+    image: "clang_stage3:${PROJECT}_${LLVM_VERSION}"
     depends_on:
       - clang_stage2_pgo_lto

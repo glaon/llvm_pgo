@@ -1,10 +1,15 @@
 ARG LLVM_VERSION
+ARG PROJECT
+
+FROM clang_stage2_train_${PROJECT}:${LLVM_VERSION} as train
+
+ARG LLVM_VERSION
 
 FROM clang_stage1:${LLVM_VERSION} as stage2-pgo-lto
 
 RUN mkdir stage2-pgo-lto
 
-COPY --from=stage2-train /llvm-project/stage2-prof-gen/profiles/clang.profdata /llvm-project/stage2-pgo-lto/clang.profdata
+COPY --from=train /llvm-project/stage2-prof-gen/profiles/clang.profdata /llvm-project/stage2-pgo-lto/clang.profdata
 
 RUN git clone --branch 0.21 --depth=1 https://github.com/include-what-you-use/include-what-you-use.git /iwyu/
 

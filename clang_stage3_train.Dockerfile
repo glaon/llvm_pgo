@@ -1,6 +1,7 @@
 ARG LLVM_VERSION
+ARG PROJECT
 
-FROM clang_stage2_pgo_lto:${LLVM_VERSION} as stage3-bolt
+FROM clang_stage2_pgo_lto:${PROJECT}_${LLVM_VERSION} as stage3-bolt
 
 ARG LINUX_KERNEL_VERSION=v6.6.10
 ARG PROJECT

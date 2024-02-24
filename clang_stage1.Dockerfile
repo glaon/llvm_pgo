@@ -1,6 +1,6 @@
 ARG LLVM_VERSION
 
-FROM llvm_repo:${LLVM_VERSION} as stage1
+FROM llvm_base:${LLVM_VERSION} as stage1
 
 RUN mkdir stage1 && cd stage1 && cmake ../llvm \
      -DLLVM_ENABLE_PROJECTS="clang;lld;bolt" \

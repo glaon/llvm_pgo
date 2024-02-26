@@ -1,6 +1,6 @@
 ARG LLVM_VERSION
 
-FROM clang_stage1:${LLVM_VERSION} as stage2-instrumented
+FROM clang_stage1:${LLVM_VERSION} AS stage2-instrumented
 
 # use stage1 clang
 ENV CC=/llvm-project/stage1/bin/clang

@@ -1,11 +1,11 @@
 ARG LLVM_VERSION
 ARG PROJECT
 
-FROM clang_stage2_train:${PROJECT}_${LLVM_VERSION} as train
+FROM clang_stage2_train:${PROJECT}_${LLVM_VERSION} AS train
 
 ARG LLVM_VERSION
 
-FROM clang_stage1:${LLVM_VERSION} as stage2-pgo-lto
+FROM clang_stage1:${LLVM_VERSION} AS stage2-pgo-lto
 
 RUN mkdir stage2-pgo-lto
 

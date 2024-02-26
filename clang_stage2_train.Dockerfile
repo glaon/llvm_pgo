@@ -1,6 +1,6 @@
 ARG LLVM_VERSION
 
-FROM clang_stage2_instrumented:${LLVM_VERSION} as stage2-train
+FROM clang_stage2_instrumented:${LLVM_VERSION} AS stage2-train
 
 ARG PROJECT=clang
 

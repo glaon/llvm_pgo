@@ -1,4 +1,4 @@
-FROM ubuntu:22.04 as llvm_base
+FROM ubuntu:22.04 AS llvm_base
 
 ARG LLVM_VERSION
 
@@ -19,7 +19,7 @@ ENV CMAKE_BUILD_TYPE=Release
 
 ###################################################################################################
 # stage1 build without instrumentation
-FROM llvm_base as stage1
+FROM llvm_base AS stage1
 
 RUN mkdir stage1 && cd stage1 && cmake ../llvm \
      -DLLVM_ENABLE_PROJECTS="clang;lld;bolt" \
@@ -35,7 +35,7 @@ ENV CXX=/llvm-project/stage1/bin/clang++
 
 ###################################################################################################
 # stage2 instrumented
-FROM stage1 as stage2-instrumented
+FROM stage1 AS stage2-instrumented
 
 # use stage1 clang
 ENV CC=/llvm-project/stage1/bin/clang
@@ -56,7 +56,7 @@ ENV CXX=/llvm-project/stage2-prof-gen/bin/clang++
 
 ###################################################################################################
 # stage2 train stage
-FROM stage2-instrumented as stage2-train
+FROM stage2-instrumented AS stage2-train
 
 ARG PROJECT=clang
 
@@ -70,7 +70,7 @@ RUN cd stage2-prof-gen/profiles && \
 
 
 ###################################################################################################
-FROM stage1 as stage2-pgo-lto
+FROM stage1 AS stage2-pgo-lto
 
 RUN mkdir stage2-pgo-lto
 
